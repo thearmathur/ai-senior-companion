@@ -1,0 +1,31 @@
+# Environment & Secrets
+.env
+.streamlit/secrets.toml
+
+# Database & Archives
+*.db
+*.sqlite3
+*.zip
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local task shims
+powershell.cmd
