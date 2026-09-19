@@ -674,6 +674,94 @@ user_name = st.session_state.user.get("name", "Mr. Sharma")
 # Inject Senior Accessibility CSS
 st.markdown(get_accessibility_css(text_size, contrast_mode), unsafe_allow_html=True)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SENIOR SAFETY: Lock the sidebar permanently open.
+#   • Hide the collapse arrow button (chevron) that Streamlit renders inside
+#     the sidebar – seniors should never accidentally lose the menu.
+#   • Also hide the hamburger ☰ toggle in the top-left header.
+#   • As a belt-and-braces fallback, inject a sticky top navigation bar that
+#     is always visible even if the browser viewport is very narrow (mobile).
+# ─────────────────────────────────────────────────────────────────────────────
+_is_hc = contrast_mode == "High Contrast"
+_top_bg    = "#1B4965" if not _is_hc else "#FACC15"
+_top_txt   = "#FFFFFF" if not _is_hc else "#000000"
+_top_hover = "#155e8a" if not _is_hc else "#eab308"
+
+st.markdown(
+    f"""
+    <style>
+    /* ── 1. Hide the sidebar collapse / chevron button ── */
+    button[data-testid="collapsedControl"],
+    button[kind="header"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="StyledFullScreenButton"],
+    section[data-testid="stSidebar"] > div:first-child > button,
+    .st-emotion-cache-1cypcdb,
+    .st-emotion-cache-h5rgaw {{
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+    }}
+
+    /* ── 2. Hide the top-left hamburger ☰ menu toggle ── */
+    header[data-testid="stHeader"] button,
+    [data-testid="stToolbar"] button,
+    .viewerBadge_container__1QSob,
+    #MainMenu {{
+        display: none !important;
+        visibility: hidden !important;
+    }}
+
+    /* ── 3. Keep sidebar always wide and visible ── */
+    section[data-testid="stSidebar"] {{
+        display: flex !important;
+        visibility: visible !important;
+        min-width: 260px !important;
+        transform: none !important;
+        left: 0 !important;
+        position: relative !important;
+    }}
+
+    /* ── 4. Sticky top fallback navigation bar (mobile / narrow screens) ── */
+    #senior-topnav {{
+        position: sticky;
+        top: 0;
+        z-index: 9999;
+        background-color: {_top_bg};
+        padding: 10px 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        border-bottom: 3px solid {"#eab308" if not _is_hc else "#1B4965"};
+    }}
+    #senior-topnav span {{
+        color: {_top_txt};
+        font-size: 15px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1.5px solid {"rgba(255,255,255,0.3)" if not _is_hc else "#1B4965"};
+        text-decoration: none;
+        white-space: nowrap;
+        display: inline-block;
+    }}
+    #senior-topnav span:hover {{
+        background-color: {_top_hover};
+    }}
+
+    /* Hide top-nav on wide screens where sidebar is visible */
+    @media (min-width: 800px) {{
+        #senior-topnav {{
+            display: none !important;
+        }}
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # --- ROUTING HELPER ---
 def navigate_to(page_name: str):
@@ -751,6 +839,45 @@ with st.sidebar:
     else:
         st.info("🟡 Demo Mode (Safe Fallback)", icon="ℹ️")
 
+
+# ── STICKY TOP NAVIGATION BAR (fallback for mobile / narrow screens) ──
+# Uses Streamlit query-param links to navigate so no JS is required.
+_cur_page = st.session_state.current_page
+_nav_top_items = [
+    ("home", "🏠 Home"),
+    ("companion", "🤖 Ask"),
+    ("explain", "📄 Explain"),
+    ("scam", "🛡️ Scam"),
+    ("guided", "🧭 Guide"),
+    ("reminders", "🔔 Remind"),
+    ("my_day", "📅 My Day"),
+    ("settings", "⚙️ Settings"),
+]
+
+_nav_spans = "".join(
+    f'<span style="{"background:#0F3A54;" if k == _cur_page else ""}">{lbl}</span>'
+    for k, lbl in _nav_top_items
+)
+st.markdown(
+    f'<div id="senior-topnav">{_nav_spans}</div>',
+    unsafe_allow_html=True
+)
+
+# Native Streamlit top-nav buttons (hidden on wide screens via CSS above;
+# shown when the sidebar is not accessible, e.g. on small screens).
+with st.container():
+    _cols = st.columns(len(_nav_top_items))
+    for idx, (pg_key, pg_label) in enumerate(_nav_top_items):
+        with _cols[idx]:
+            if st.button(pg_label, key=f"topnav_{pg_key}"):
+                st.session_state.current_page = pg_key
+                st.rerun()
+
+st.markdown(
+    "<style>#senior-topnav + div[data-testid='stHorizontalBlock'] {"
+    " display: none; } </style>",
+    unsafe_allow_html=True,
+)
 
 # Display flash messages if any
 if st.session_state.flash_notice:
